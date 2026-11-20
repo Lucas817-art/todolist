@@ -1,0 +1,1721 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Todo List · 待办 / 通讯录 / 提醒</title>
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap">
+<style>
+  :root{
+    --bg:#f4f6fb;
+    --card:#ffffff;
+    --ink:#1b2033;
+    --ink-2:#5b6480;
+    --ink-3:#9aa3bb;
+    --line:#e8ecf5;
+    --soft:#f3f5fb;
+    --primary:#4c6fff;
+    --primary-2:#6f8cff;
+    --done:#22c17a;
+    --p-high:#ff5d6c;
+    --p-mid:#ffa93c;
+    --p-low:#4cc2d6;
+    --shadow:0 18px 50px -22px rgba(30,50,110,.30);
+    --radius:22px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{min-height:100%}
+  body{
+    font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+    background:
+      radial-gradient(900px 500px at 8% -6%, #dfe6ff 0%, rgba(223,230,255,0) 60%),
+      radial-gradient(700px 500px at 100% 0%, #ffe9f0 0%, rgba(255,233,240,0) 55%),
+      var(--bg);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    display:flex;justify-content:center;
+    padding:32px 18px 60px;
+  }
+  .app{width:100%;max-width:720px}
+
+  /* ---------- 头部 ---------- */
+  .head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:0 6px 16px;flex-wrap:wrap}
+  .head .title{font-size:29px;font-weight:700;letter-spacing:-.5px}
+  .head .title span{
+    background:linear-gradient(100deg,var(--primary),#9a7bff);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  }
+  .head .sub{font-size:12.5px;color:var(--ink-2);margin-top:6px}
+  .progress-wrap{
+    display:flex;align-items:center;gap:12px;
+    background:rgba(255,255,255,.72);backdrop-filter:blur(10px);
+    border:1px solid rgba(255,255,255,.8);
+    padding:9px 15px 9px 11px;border-radius:18px;
+    box-shadow:0 10px 26px -20px rgba(30,50,110,.5);
+  }
+  .ring{position:relative;width:44px;height:44px;flex:0 0 44px}
+  .ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+  .ring .track{stroke:#e7ebf5}
+  .ring .bar{stroke:url(#grad);stroke-width:6;fill:none;stroke-linecap:round;transition:stroke-dashoffset .45s cubic-bezier(.3,.8,.4,1)}
+  .ring .num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700}
+  .progress-txt{font-size:11.5px;color:var(--ink-2);line-height:1.5}
+  .progress-txt b{display:block;color:var(--ink);font-size:13px;font-weight:600}
+
+  /* ---------- 顶部导航 ---------- */
+  .topnav{
+    display:flex;gap:4px;background:rgba(255,255,255,.75);
+    backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.9);
+    padding:5px;border-radius:15px;margin:0 0 14px;
+  }
+  .nav-btn{
+    flex:1;border:0;background:transparent;cursor:pointer;font-family:inherit;
+    font-size:13.5px;font-weight:500;color:var(--ink-2);
+    padding:9px 10px;border-radius:11px;transition:.18s;
+    display:flex;align-items:center;justify-content:center;gap:6px;
+  }
+  .nav-btn:hover{color:var(--ink)}
+  .nav-btn.on{background:linear-gradient(135deg,var(--primary),#8f74ff);color:#fff;box-shadow:0 8px 20px -10px rgba(76,111,255,.85)}
+  .nav-btn .badge{
+    font-size:10.5px;padding:1px 6px;border-radius:20px;
+    background:rgba(255,255,255,.25);color:#fff;font-weight:600;
+  }
+  .nav-btn:not(.on) .badge{background:#eef1fa;color:var(--ink-3)}
+
+  /* ---------- 卡片 ---------- */
+  .card{
+    background:var(--card);border-radius:var(--radius);
+    box-shadow:var(--shadow);border:1px solid rgba(255,255,255,.9);
+    overflow:hidden;
+  }
+  .view{display:none}
+  .view.on{display:block}
+
+  /* ---------- 提醒横幅 ---------- */
+  .banner{
+    display:none;gap:11px;align-items:flex-start;
+    padding:13px 18px;
+    background:linear-gradient(100deg,#fff6e8,#fff1f2);
+    border-bottom:1px solid #ffe6cc;
+  }
+  .banner.on{display:flex}
+  .banner .bell{
+    width:30px;height:30px;flex:0 0 30px;border-radius:9px;
+    background:#fff;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 4px 12px -6px rgba(226,137,28,.7);
+  }
+  .banner .bell svg{width:16px;height:16px}
+  .banner .b-main{flex:1;min-width:0}
+  .banner .b-title{font-size:13px;font-weight:600;color:#c4710c}
+  .banner .b-list{font-size:12px;color:#8b6a45;margin-top:3px;line-height:1.6}
+  .banner .b-list span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .banner .b-close{
+    border:0;background:transparent;cursor:pointer;color:#b58a5c;
+    font-size:16px;line-height:1;padding:2px 4px;border-radius:6px;
+  }
+  .banner .b-close:hover{background:rgba(255,255,255,.7)}
+
+  /* ---------- 输入区 ---------- */
+  .composer{padding:18px 18px 14px}
+  .input-row{
+    display:flex;align-items:center;gap:10px;
+    background:#f7f9fe;border:1.5px solid transparent;border-radius:16px;
+    padding:0 12px 0 14px;transition:.22s;
+  }
+  .input-row:focus-within{border-color:#c9d5ff;background:#fff;box-shadow:0 0 0 4px rgba(76,111,255,.10)}
+  .input-row .plus{
+    width:26px;height:26px;flex:0 0 26px;border-radius:50%;
+    background:linear-gradient(135deg,var(--primary),#8f74ff);
+    color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;user-select:none;
+  }
+  #newTask{flex:1;border:0;outline:0;background:transparent;font-size:15px;font-family:inherit;color:var(--ink);padding:14px 0;min-width:0}
+  #newTask::placeholder{color:var(--ink-3)}
+  .add-btn{
+    border:0;cursor:pointer;font-family:inherit;
+    background:linear-gradient(135deg,var(--primary),#8f74ff);color:#fff;
+    font-size:14px;font-weight:600;padding:10px 20px;border-radius:12px;
+    box-shadow:0 10px 22px -12px rgba(76,111,255,.9);
+    transition:transform .16s,box-shadow .16s;white-space:nowrap;
+  }
+  .add-btn:hover{transform:translateY(-1px);box-shadow:0 14px 26px -12px rgba(76,111,255,.95)}
+  .add-btn:active{transform:translateY(0) scale(.98)}
+
+  .meta-row{display:flex;gap:8px;align-items:center;padding:11px 4px 0;flex-wrap:wrap}
+  .chip-group{display:flex;gap:5px;background:var(--soft);padding:4px;border-radius:12px}
+  .pri-btn{
+    border:0;cursor:pointer;font-family:inherit;font-size:12px;font-weight:500;
+    color:var(--ink-2);background:transparent;padding:6px 11px;border-radius:9px;
+    display:flex;align-items:center;gap:5px;transition:.18s;
+  }
+  .pri-btn .dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.55;transition:.18s}
+  .pri-btn.on{background:#fff;color:var(--ink);box-shadow:0 3px 10px -4px rgba(30,50,110,.22)}
+  .pri-btn.on .dot{opacity:1}
+  .pri-btn[data-pri="high"].on{color:var(--p-high)}
+  .pri-btn[data-pri="mid"].on{color:var(--p-mid)}
+  .pri-btn[data-pri="low"].on{color:var(--p-low)}
+
+  .field{
+    display:flex;align-items:center;gap:6px;height:34px;
+    background:var(--soft);border-radius:12px;padding:0 10px;
+    font-size:12px;color:var(--ink-2);transition:.18s;
+  }
+  .field:focus-within{background:#fff;box-shadow:0 0 0 3px rgba(76,111,255,.10)}
+  .field svg{width:13px;height:13px;opacity:.65;flex:0 0 13px}
+  .field input{
+    border:0;background:transparent;outline:0;font-family:inherit;
+    font-size:12px;color:var(--ink-2);cursor:pointer;padding:0;
+  }
+  .field input[type=date]{width:104px}
+  .field input[type=datetime-local]{width:150px;font-size:11.5px}
+  .field select{
+    border:0;background:transparent;outline:0;font-family:inherit;
+    font-size:12px;color:var(--ink-2);cursor:pointer;padding:0 2px;max-width:150px;
+  }
+  .field.remind input[type=datetime-local]{width:146px}
+
+  /* ---------- 工具条 ---------- */
+  .toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:2px 18px 12px;flex-wrap:wrap}
+  .tabs{display:flex;gap:3px}
+  .tab{
+    border:0;background:transparent;cursor:pointer;font-family:inherit;
+    font-size:12.5px;color:var(--ink-2);font-weight:500;
+    padding:8px 12px;border-radius:10px;transition:.18s;
+  }
+  .tab:hover{background:var(--soft);color:var(--ink)}
+  .tab.on{color:var(--primary);background:#edf1ff;font-weight:600}
+  .tab .cnt{font-size:11px;opacity:.75;margin-left:3px}
+  .search{
+    display:flex;align-items:center;gap:7px;background:#f7f9fe;
+    border:1.5px solid transparent;border-radius:12px;padding:0 11px;height:34px;transition:.2s;
+  }
+  .search:focus-within{border-color:#c9d5ff;background:#fff;box-shadow:0 0 0 3px rgba(76,111,255,.08)}
+  .search svg{width:14px;height:14px;opacity:.55;flex:0 0 14px}
+  .search input{border:0;background:transparent;outline:0;width:112px;font-family:inherit;font-size:12.5px;color:var(--ink)}
+  .search input::placeholder{color:var(--ink-3)}
+
+  /* ---------- 任务列表 ---------- */
+  .list-wrap{border-top:1px solid var(--line);min-height:170px;background:linear-gradient(180deg,#fbfcff,#fff 120px)}
+  ul.list{list-style:none}
+  li.item{display:flex;align-items:flex-start;gap:11px;padding:13px 18px;border-bottom:1px solid #f1f4fb;transition:background .18s;animation:in .28s cubic-bezier(.2,.9,.3,1.1) both}
+  li.item:hover{background:#f8faff}
+  li.item:last-child{border-bottom:0}
+  @keyframes in{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+  .check{
+    width:22px;height:22px;flex:0 0 22px;margin-top:2px;border-radius:50%;
+    border:2px solid #d3dae9;background:#fff;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;transition:.2s;padding:0;
+  }
+  .check:hover{border-color:var(--primary-2)}
+  .check svg{width:12px;height:12px;opacity:0;transform:scale(.6);transition:.2s}
+  .check.done{background:linear-gradient(135deg,var(--done),#3ad693);border-color:transparent}
+  .check.done svg{opacity:1;transform:scale(1)}
+  .main{flex:1;min-width:0}
+  .row1{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .text{font-size:14.5px;line-height:1.5;color:var(--ink);word-break:break-word;cursor:text;transition:.2s}
+  .text.done{color:var(--ink-3);text-decoration:line-through;text-decoration-color:#c7cfe0;text-decoration-thickness:1.5px}
+  .text.editing{display:none}
+  .edit-input{
+    flex:1;min-width:0;font-family:inherit;font-size:14.5px;color:var(--ink);
+    border:1.5px solid #c9d5ff;border-radius:10px;padding:6px 9px;outline:0;background:#fff;
+    box-shadow:0 0 0 3px rgba(76,111,255,.10);
+  }
+  .tag{font-size:11px;font-weight:600;line-height:1;padding:4px 7px;border-radius:6px;white-space:nowrap}
+  .tag.high{color:var(--p-high);background:#fff0f1}
+  .tag.mid{color:#e2891c;background:#fff6e8}
+  .tag.low{color:#219eb0;background:#e9fbfd}
+
+  .row2{display:flex;align-items:center;gap:9px;margin-top:5px;font-size:11.5px;color:var(--ink-3);flex-wrap:wrap}
+  .due,.rm{display:flex;align-items:center;gap:4px;white-space:nowrap}
+  .due svg,.rm svg{width:12px;height:12px;opacity:.7}
+  .due.today{color:#e2891c;font-weight:600}
+  .due.overdue{color:var(--p-high);font-weight:600}
+  .due.future{color:#3f8ce0}
+  .rm.hot{color:var(--p-high);font-weight:600;background:#fff0f1;padding:2px 6px;border-radius:5px}
+  .rm.soon{color:#e2891c;font-weight:600}
+  .rm.idle{color:#7d88a6}
+  .who{
+    display:inline-flex;align-items:center;gap:4px;max-width:130px;
+    font-size:11px;color:#5b6480;background:#f1f3fa;padding:2px 6px;border-radius:5px;
+    cursor:pointer;transition:.16s;
+  }
+  .who:hover{background:#e7ecfa;color:var(--primary)}
+  .who b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  .del{
+    width:28px;height:28px;flex:0 0 28px;margin-top:1px;border:0;background:transparent;border-radius:9px;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;color:#c3cad9;opacity:.7;transition:.18s;
+  }
+  .del:hover{background:#fff0f1;color:var(--p-high);opacity:1}
+  .del svg{width:15px;height:15px}
+
+  .empty{padding:48px 20px 52px;text-align:center;color:var(--ink-3)}
+  .empty .icon{
+    width:62px;height:62px;margin:0 auto 14px;border-radius:50%;
+    background:linear-gradient(135deg,#eef2ff,#f9f0ff);display:flex;align-items:center;justify-content:center;
+  }
+  .empty .icon svg{width:28px;height:28px;opacity:.5}
+  .empty .t{font-size:14px;color:var(--ink-2);font-weight:500}
+  .empty .d{font-size:12.5px;margin-top:6px;line-height:1.6}
+
+  /* ---------- 底部 ---------- */
+  .foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;border-top:1px solid var(--line);background:#fff;font-size:12.5px;color:var(--ink-2);flex-wrap:wrap}
+  .foot .left b{color:var(--ink);font-weight:600}
+  .clear-btn{border:0;background:transparent;cursor:pointer;font-family:inherit;font-size:12.5px;color:var(--ink-3);padding:6px 10px;border-radius:9px;transition:.18s}
+  .clear-btn:hover{background:#fff0f1;color:var(--p-high)}
+
+  /* ---------- 通讯录 ---------- */
+  .c-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px 12px;flex-wrap:wrap}
+  .c-title{font-size:15px;font-weight:700}
+  .c-title em{font-style:normal;font-size:11.5px;font-weight:500;color:var(--ink-3);margin-left:6px}
+  .c-tools{display:flex;gap:8px;align-items:center}
+  .btn{
+    border:0;cursor:pointer;font-family:inherit;font-size:12.5px;font-weight:600;
+    padding:8px 14px;border-radius:10px;transition:.16s;white-space:nowrap;
+  }
+  .btn.primary{background:linear-gradient(135deg,var(--primary),#8f74ff);color:#fff;box-shadow:0 8px 20px -12px rgba(76,111,255,.95)}
+  .btn.primary:hover{transform:translateY(-1px)}
+  .btn.ghost{background:var(--soft);color:var(--ink-2)}
+  .btn.ghost:hover{background:#e9edf8;color:var(--ink)}
+  .btn.danger{background:#fff0f1;color:var(--p-high)}
+  .btn.danger:hover{background:#ffe3e6}
+
+  .form-panel{display:none;padding:16px 18px 18px;background:#fbfcff;border-bottom:1px solid var(--line)}
+  .form-panel.on{display:block;animation:in .22s ease both}
+  .form-title{font-size:13px;font-weight:600;margin-bottom:12px;color:var(--ink)}
+  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .fitem{display:flex;flex-direction:column;gap:5px}
+  .fitem.full{grid-column:1/-1}
+  .fitem label{font-size:11.5px;color:var(--ink-3);padding-left:2px}
+  .fitem input,.fitem textarea{
+    font-family:inherit;font-size:13px;color:var(--ink);
+    border:1.5px solid #e4e9f6;background:#fff;border-radius:10px;
+    padding:9px 11px;outline:0;transition:.18s;width:100%;
+  }
+  .fitem input:focus,.fitem textarea:focus{border-color:#c9d5ff;box-shadow:0 0 0 3px rgba(76,111,255,.10)}
+  .fitem textarea{resize:vertical;min-height:56px}
+  .form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+
+  .contacts{padding:0 0 4px}
+  .ct-item{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid #f1f4fb;transition:background .18s;animation:in .26s ease both}
+  .ct-item:hover{background:#f8faff}
+  .ct-item:last-child{border-bottom:0}
+  .avatar{
+    width:38px;height:38px;flex:0 0 38px;border-radius:11px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:15px;font-weight:600;color:#fff;
+  }
+  .ct-main{flex:1;min-width:0}
+  .ct-name{font-size:14px;font-weight:600;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .ct-role{font-size:11px;font-weight:500;color:#7a86a8;background:#f1f3fa;padding:2px 6px;border-radius:5px}
+  .ct-info{font-size:11.5px;color:var(--ink-3);margin-top:4px;line-height:1.6;word-break:break-all}
+  .ct-info span+span::before{content:"·";margin:0 5px;opacity:.5}
+  .ct-note{font-size:11.5px;color:#9aa3bb;margin-top:3px;line-height:1.5}
+  .ct-act{display:flex;gap:4px;flex:0 0 auto}
+  .icon-btn{
+    width:28px;height:28px;border:0;background:transparent;border-radius:8px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;color:#c3cad9;transition:.16s;
+  }
+  .icon-btn:hover{background:var(--soft);color:var(--primary)}
+  .icon-btn.d:hover{background:#fff0f1;color:var(--p-high)}
+  .icon-btn svg{width:15px;height:15px}
+  .linkbadge{
+    font-size:10.5px;color:#4c6fff;background:#edf1ff;padding:2px 6px;border-radius:5px;white-space:nowrap;
+  }
+
+  /* ---------- 数据 / 备份 ---------- */
+  .sec{padding:17px 18px;border-bottom:1px solid var(--line)}
+  .sec:last-child{border-bottom:0}
+  .sec h3{font-size:14px;font-weight:700;display:flex;align-items:center;gap:7px}
+  .sec h3 i{width:3px;height:14px;background:linear-gradient(180deg,var(--primary),#9a7bff);border-radius:2px;display:block}
+  .sec p{font-size:12px;color:var(--ink-3);line-height:1.65;margin:7px 0 12px}
+  .btn-row{display:flex;gap:8px;flex-wrap:wrap}
+  .text-panel{display:none;margin-top:12px;background:#fbfcff;border:1px solid #e4e9f6;border-radius:12px;padding:10px 11px}
+  .text-panel.on{display:block;animation:in .2s ease both}
+  .tp-head{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--ink-2);font-weight:600;margin-bottom:8px}
+  .tp-close{border:0;background:transparent;cursor:pointer;font-family:inherit;font-size:11.5px;color:var(--ink-3);padding:3px 6px;border-radius:6px}
+  .tp-close:hover{background:#eef1fa;color:var(--ink-2)}
+  .text-panel textarea{
+    width:100%;min-height:96px;max-height:200px;resize:vertical;
+    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;line-height:1.5;
+    color:var(--ink-2);border:1.5px solid #e4e9f6;border-radius:10px;
+    padding:9px 10px;outline:0;background:#fff;word-break:break-all;
+  }
+  .text-panel textarea:focus{border-color:#c9d5ff;box-shadow:0 0 0 3px rgba(76,111,255,.10)}
+  .text-panel textarea.readonly{background:#f5f7fd;color:#7a86a8}
+  .tp-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:9px}
+  .tp-hint{font-size:11.5px;color:var(--ink-3);line-height:1.5;flex:1}
+  .meta-line{font-size:11.5px;color:var(--ink-3);margin-top:10px}
+  .data-stat{display:flex;gap:18px;margin-top:12px;flex-wrap:wrap}
+  .data-stat div{font-size:12px;color:var(--ink-3)}
+  .data-stat b{display:block;font-size:19px;color:var(--ink);font-weight:700;line-height:1.3}
+  .notify-state{font-size:11.5px;color:var(--ink-3);margin-left:8px}
+  .warn{
+    font-size:11.5px;color:#9a6b2f;background:#fff9ef;border:1px solid #ffe9c9;
+    border-radius:10px;padding:9px 11px;margin-top:10px;line-height:1.65;
+  }
+
+  .hint{text-align:center;font-size:11.5px;color:#a8b0c6;margin-top:15px;line-height:1.7}
+
+  /* ---------- 锁屏 ---------- */
+  .lock{
+    position:fixed;inset:0;z-index:9999;
+    display:none;align-items:center;justify-content:center;
+    padding:20px;
+    background:linear-gradient(160deg,#eef2ff 0%,#f6f2ff 45%,#fff1f6 100%);
+  }
+  .lock.on{display:flex}
+  .lock-card{
+    width:100%;max-width:340px;background:#fff;border-radius:22px;
+    padding:30px 26px 24px;text-align:center;
+    box-shadow:0 26px 60px -28px rgba(40,60,120,.45);
+    border:1px solid rgba(255,255,255,.9);
+  }
+  .lock-icon{
+    width:52px;height:52px;margin:0 auto 16px;border-radius:16px;
+    background:linear-gradient(135deg,#4c6fff,#8f74ff);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 12px 26px -14px rgba(76,111,255,.95);
+  }
+  .lock-icon svg{width:24px;height:24px}
+  .lock-card h2{font-size:17px;font-weight:700;letter-spacing:.2px}
+  .lock-card p{font-size:12.5px;color:var(--ink-3);margin-top:7px}
+  .lock-row{
+    display:flex;gap:8px;margin-top:18px;
+  }
+  .lock-row input{
+    flex:1;min-width:0;font-family:inherit;font-size:14px;color:var(--ink);
+    border:1.5px solid #e4e9f6;border-radius:12px;padding:11px 13px;outline:0;
+    transition:.2s;letter-spacing:1px;background:#fbfcff;
+  }
+  .lock-row input:focus{border-color:#c9d5ff;background:#fff;box-shadow:0 0 0 3px rgba(76,111,255,.12)}
+  .lock-row button{
+    border:0;cursor:pointer;font-family:inherit;font-size:13.5px;font-weight:600;
+    color:#fff;padding:0 18px;border-radius:12px;
+    background:linear-gradient(135deg,var(--primary),#8f74ff);
+    box-shadow:0 10px 22px -12px rgba(76,111,255,.9);
+    transition:.16s;
+  }
+  .lock-row button:hover{transform:translateY(-1px)}
+  .lock-row button:disabled{opacity:.55;cursor:not-allowed;transform:none}
+  .lock-msg{font-size:12px;color:var(--p-high);margin-top:11px;min-height:17px;line-height:1.5}
+  .lock-foot{font-size:11px;color:#b3bacd;margin-top:14px}
+  @keyframes shake{
+    0%,100%{transform:translateX(0)}
+    20%{transform:translateX(-7px)}
+    40%{transform:translateX(6px)}
+    60%{transform:translateX(-4px)}
+    80%{transform:translateX(3px)}
+  }
+
+  @media (max-width:600px){
+    body{padding:20px 12px 40px}
+    .head .title{font-size:24px}
+    .composer{padding:14px 13px 12px}
+    .input-row{padding:0 9px 0 11px}
+    .add-btn{padding:10px 14px;font-size:13px}
+    .toolbar{padding:2px 13px 11px}
+    .tab{padding:7px 9px;font-size:12px}
+    .search{display:none}
+    li.item{padding:12px 13px;gap:9px}
+    .foot{padding:11px 13px}
+    .field input[type=date]{width:92px}
+    .field input[type=datetime-local]{width:140px}
+    .fgrid{grid-template-columns:1fr}
+    .c-head{padding:13px 13px 10px}
+    .ct-item{padding:11px 13px}
+    .sec{padding:15px 13px}
+    .banner{padding:11px 13px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ===== 头部 ===== -->
+  <header class="head">
+    <div>
+      <div class="title">我 的 <span>工作台</span></div>
+      <div class="sub" id="subline">待办 · 通讯录 · 提醒</div>
+    </div>
+    <div class="progress-wrap">
+      <div class="ring">
+        <svg viewBox="0 0 48 48">
+          <defs>
+            <linearGradient id="grad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#4c6fff"/>
+              <stop offset="100%" stop-color="#9a7bff"/>
+            </linearGradient>
+          </defs>
+          <circle class="track" cx="24" cy="24" r="20"/>
+          <circle class="bar" id="ringBar" cx="24" cy="24" r="20" stroke-dasharray="125.66" stroke-dashoffset="125.66"/>
+        </svg>
+        <div class="num" id="ringNum">0%</div>
+      </div>
+      <div class="progress-txt">
+        <b id="statDone">0 / 0 已完成</b>
+        <span id="statSurplus">还没有任务</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== 导航 ===== -->
+  <nav class="topnav" id="nav">
+    <button class="nav-btn on" data-view="todo">待办<span class="badge" id="nTodo">0</span></button>
+    <button class="nav-btn" data-view="contacts">通讯录<span class="badge" id="nCt">0</span></button>
+    <button class="nav-btn" data-view="data">数据与提醒</button>
+  </nav>
+
+  <main class="card">
+
+    <!-- ================= 视图：待办 ================= -->
+    <div class="view on" id="view-todo">
+
+      <!-- 跟进提醒横幅 -->
+      <div class="banner" id="banner">
+        <div class="bell">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#e2891c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>
+          </svg>
+        </div>
+        <div class="b-main">
+          <div class="b-title" id="bTitle">该盯一下了</div>
+          <div class="b-list" id="bList"></div>
+        </div>
+        <button class="b-close" id="bClose" title="关闭">✕</button>
+      </div>
+
+      <!-- 输入区 -->
+      <div class="composer">
+        <div class="input-row">
+          <div class="plus">+</div>
+          <input id="newTask" type="text" placeholder="要做点什么…按 Enter 添加" autocomplete="off" maxlength="120">
+          <button class="add-btn" id="addBtn">添加</button>
+        </div>
+        <div class="meta-row">
+          <div class="chip-group" id="priGroup">
+            <button class="pri-btn on" data-pri="mid"><i class="dot"></i>普通</button>
+            <button class="pri-btn" data-pri="high"><i class="dot"></i>重要</button>
+            <button class="pri-btn" data-pri="low"><i class="dot"></i>随手</button>
+          </div>
+          <div class="field" title="截止日期">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+            <input id="dueDate" type="date">
+          </div>
+          <div class="field remind" title="到这一天的这个时间提醒你跟进">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+            <input id="remindAt" type="datetime-local">
+          </div>
+          <div class="field" title="关联通讯录里的人">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.8 20a7.4 7.4 0 0 1 14.4 0"/></svg>
+            <select id="contactSel"><option value="">跟进谁（可不选）</option></select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 工具条 -->
+      <div class="toolbar">
+        <div class="tabs" id="tabs">
+          <button class="tab on" data-tab="all">全部<span class="cnt" id="cAll">0</span></button>
+          <button class="tab" data-tab="todo">进行中<span class="cnt" id="cTodo">0</span></button>
+          <button class="tab" data-tab="done">已完成<span class="cnt" id="cDone">0</span></button>
+          <button class="tab" data-tab="follow">待跟进<span class="cnt" id="cFollow">0</span></button>
+        </div>
+        <label class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4.2-4.2"/></svg>
+          <input id="search" type="text" placeholder="搜索任务" autocomplete="off">
+        </label>
+      </div>
+
+      <!-- 列表 -->
+      <div class="list-wrap">
+        <ul class="list" id="list"></ul>
+        <div class="empty" id="empty" style="display:none">
+          <div class="icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#8f9bbd" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><rect x="3" y="4" width="18" height="16" rx="4"/></svg>
+          </div>
+          <div class="t" id="emptyT">清单空空的</div>
+          <div class="d" id="emptyD">在上面输入框写点什么，开始今天的第一件事</div>
+        </div>
+      </div>
+
+      <!-- 底部 -->
+      <div class="foot">
+        <div class="left">未完成 <b id="footLeft">0</b> 项 · 已完成 <b id="footDone">0</b> 项</div>
+        <button class="clear-btn" id="clearDone">清除已完成</button>
+      </div>
+    </div>
+
+    <!-- ================= 视图：通讯录 ================= -->
+    <div class="view" id="view-contacts">
+      <div class="c-head">
+        <div class="c-title">通讯录<em id="ctCount">0 位联系人</em></div>
+        <div class="c-tools">
+          <label class="search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4.2-4.2"/></svg>
+            <input id="ctSearch" type="text" placeholder="搜姓名、单位" autocomplete="off">
+          </label>
+          <button class="btn primary" id="addContactBtn">+ 联系人</button>
+        </div>
+      </div>
+
+      <!-- 联系人表单 -->
+      <div class="form-panel" id="ctForm">
+        <div class="form-title" id="ctFormTitle">新增联系人</div>
+        <div class="fgrid">
+          <div class="fitem"><label>姓名 *</label><input id="fName" type="text" placeholder="如 王建国" maxlength="30"></div>
+          <div class="fitem"><label>单位 / 机构</label><input id="fOrg" type="text" placeholder="如 某银行广州分行" maxlength="60"></div>
+          <div class="fitem"><label>角色 / 身份</label><input id="fRole" type="text" placeholder="如 客户经理 / 业主代表" maxlength="30"></div>
+          <div class="fitem"><label>电话</label><input id="fPhone" type="text" placeholder="手机或座机" maxlength="40"></div>
+          <div class="fitem full"><label>邮箱</label><input id="fEmail" type="text" placeholder="name@company.com" maxlength="80"></div>
+          <div class="fitem full"><label>备注</label><textarea id="fNote" placeholder="负责什么、沟通习惯、上次聊到哪…" maxlength="200"></textarea></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn ghost" id="ctCancel">取消</button>
+          <button class="btn primary" id="ctSave">保存</button>
+        </div>
+      </div>
+
+      <div class="contacts" id="contactList"></div>
+      <div class="empty" id="ctEmpty" style="display:none">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#8f9bbd" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.8 20a7.4 7.4 0 0 1 14.4 0"/></svg>
+        </div>
+        <div class="t">通讯录还是空的</div>
+        <div class="d">把要盯的人存进来，任务里就能直接选「跟进谁」</div>
+      </div>
+    </div>
+
+    <!-- ================= 视图：数据与提醒 ================= -->
+    <div class="view" id="view-data">
+
+      <div class="sec">
+        <h3><i></i>备份与恢复</h3>
+        <p>把全部任务和联系人打包成一个 JSON 文件。换电脑、换浏览器、清理缓存前先备份一次。</p>
+        <div class="btn-row">
+          <button class="btn primary" id="btnBackup">导出备份 (JSON)</button>
+          <button class="btn ghost" id="btnImport">导入备份</button>
+          <input type="file" id="fileImport" accept=".json,application/json" hidden>
+        </div>
+        <div class="btn-row" style="margin-top:8px">
+          <button class="btn ghost" id="btnCopy">复制备份文本</button>
+          <button class="btn ghost" id="btnPaste">粘贴文本导入</button>
+        </div>
+
+        <div class="text-panel" id="textPanel">
+          <div class="tp-head">
+            <span id="tpTitle">备份文本</span>
+            <button class="tp-close" id="tpClose">收起</button>
+          </div>
+          <textarea id="tpArea" spellcheck="false" autocomplete="off"></textarea>
+          <div class="tp-foot">
+            <span class="tp-hint" id="tpHint"></span>
+            <button class="btn primary" id="tpAction">复制</button>
+          </div>
+        </div>
+        <div class="meta-line" id="backupMeta">本机还没有备份记录</div>
+        <div class="data-stat">
+          <div>任务<b id="dsTasks">0</b></div>
+          <div>联系人<b id="dsContacts">0</b></div>
+          <div>待跟进<b id="dsFollow">0</b></div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <h3><i></i>导出表格 / 日历</h3>
+        <p>CSV 可直接用 Excel、WPS 打开（已处理中文编码）。日历文件导入手机后，即使网页关着也会提醒。</p>
+        <div class="btn-row">
+          <button class="btn ghost" id="btnCsvTask">任务 CSV</button>
+          <button class="btn ghost" id="btnCsvCt">通讯录 CSV</button>
+          <button class="btn ghost" id="btnIcs">日历提醒 (.ics)</button>
+        </div>
+      </div>
+
+      <div class="sec">
+        <h3><i></i>网页内提醒</h3>
+        <p>到点后页面顶部会弹出横幅；开启桌面通知后，浏览器还会推送系统提醒。</p>
+        <div class="btn-row">
+          <button class="btn ghost" id="btnNotify">开启桌面通知</button>
+          <button class="btn ghost" id="btnTest">测试一条提醒</button>
+          <span class="notify-state" id="notifyState">未开启</span>
+        </div>
+        <div class="warn">网页内提醒只有页面开着时才会触发。要「哪天必须盯对方回复」这种硬提醒，建议导出 .ics 放进手机日历，或每天开机时打开本页面。</div>
+      </div>
+
+      <div class="sec">
+        <h3><i></i>访问密码</h3>
+        <p>进入本页需要输入密码，离开时可以手动锁定。</p>
+        <div class="btn-row">
+          <button class="btn ghost" id="btnLock">立即锁定</button>
+        </div>
+        <div class="warn">密码只在页面里校验，能拦住随手打开链接的人；它不加密数据，懂技术的人仍可通过浏览器工具看到内容。真正保密请别把链接发到公开群，并把备份另存到安全位置。</div>
+      </div>
+
+      <div class="sec">
+        <h3><i></i>清理</h3>
+        <p>清空会删掉本机所有任务与联系人，删除前请先导出备份。</p>
+        <div class="btn-row">
+          <button class="btn danger" id="btnClearAll">清空全部数据</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <div class="hint">双击任务文字可修改 · 数据保存在本机浏览器，建议定期导出 JSON 备份</div>
+</div>
+
+<!-- ===== 锁屏 ===== -->
+<div class="lock" id="lock">
+  <div class="lock-card">
+    <div class="lock-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="4" y="10" width="16" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1.4"/>
+      </svg>
+    </div>
+    <h2>工作台已锁定</h2>
+    <p>输入访问密码后继续</p>
+    <div class="lock-row">
+      <input id="pwdInput" type="password" placeholder="访问密码" autocomplete="off" maxlength="32">
+      <button id="pwdBtn">进入</button>
+    </div>
+    <div class="lock-msg" id="pwdMsg"></div>
+    <div class="lock-foot">密码仅本机校验</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ================= 状态 ================= */
+  var KEY = "doubao.todolist.v2";
+  var OLD_KEY = "doubao.todolist.v1";
+  var state = {
+    tasks: [],
+    contacts: [],
+    doneIds: [],        // 已提醒过（避免重复弹）
+    view: "todo",
+    tab: "all",
+    pri: "mid",
+    q: "",
+    ctQ: "",
+    editId: null
+  };
+
+  var PRI_TEXT = {high:"重要", mid:"普通", low:"随手"};
+  var PALETTE = ["#4c6fff","#8f74ff","#ff7a9c","#24b47e","#ffa940","#3aa0ff","#a06bff","#ff8f6b"];
+
+  var $ = function(id){ return document.getElementById(id); };
+
+  function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+  function pad(n){ return n < 10 ? "0" + n : "" + n; }
+  function todayStr(){
+    var d = new Date();
+    return d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate());
+  }
+
+  /* ================= 存取 ================= */
+  function load(){
+    try{
+      var raw = localStorage.getItem(KEY);
+      if(raw){
+        var d = JSON.parse(raw) || {};
+        state.tasks = Array.isArray(d.tasks) ? d.tasks : [];
+        state.contacts = Array.isArray(d.contacts) ? d.contacts : [];
+        state.doneIds = Array.isArray(d.nudged) ? d.nudged : [];
+        if(d.backupAt) localStorage.setItem(KEY + ".backupAt", d.backupAt);
+        return true;
+      }
+    }catch(e){}
+    return false;
+  }
+  function save(){
+    try{
+      localStorage.setItem(KEY, JSON.stringify({
+        tasks: state.tasks,
+        contacts: state.contacts,
+        nudged: state.doneIds,
+        backupAt: localStorage.getItem(KEY + ".backupAt") || ""
+      }));
+    }catch(e){}
+  }
+
+  /* ================= 日期展示 ================= */
+  function dateLabel(s){
+    if(!s) return "";
+    var t = new Date(s.length === 10 ? s + "T00:00:00" : s);
+    if(isNaN(t.getTime())) return s;
+    var td = todayStr();
+    if(s.slice(0,10) === td) return "今天";
+    var base = new Date(td + "T00:00:00");
+    var diff = Math.round((new Date(s.slice(0,10) + "T00:00:00") - base) / 86400000);
+    if(diff === 1) return "明天";
+    if(diff === -1) return "昨天";
+    if(diff > 1 && diff <= 6) return diff + " 天后";
+    if(diff < -1) return "已逾期 " + (-diff) + " 天";
+    return (t.getMonth()+1) + "月" + t.getDate() + "日";
+  }
+  function dateClass(s){
+    if(!s) return "";
+    var td = todayStr();
+    if(s.slice(0,10) < td) return "overdue";
+    if(s.slice(0,10) === td) return "today";
+    return "future";
+  }
+  function remindLabel(s){
+    if(!s) return "";
+    var d = new Date(s);
+    if(isNaN(d.getTime())) return s;
+    return (d.getMonth()+1) + "月" + d.getDate() + "日 " + pad(d.getHours()) + ":" + pad(d.getMinutes());
+  }
+  function remindClass(s){
+    if(!s) return "idle";
+    var ms = new Date(s).getTime();
+    if(isNaN(ms)) return "idle";
+    var now = Date.now();
+    if(ms <= now) return "hot";
+    if(ms - now <= 86400000) return "soon";
+    return "idle";
+  }
+  function contactOf(id){
+    if(!id) return null;
+    for(var i=0;i<state.contacts.length;i++) if(state.contacts[i].id === id) return state.contacts[i];
+    return null;
+  }
+  function colorOf(name){
+    var sum = 0;
+    for(var i=0;i<(name||"").length;i++) sum += name.charCodeAt(i);
+    return PALETTE[sum % PALETTE.length];
+  }
+
+  /* ================= 通用渲染 ================= */
+  function renderAll(){
+    renderTasks();
+    renderContacts();
+    renderStats();
+    renderSelect();
+  }
+
+  function renderStats(){
+    var total = state.tasks.length;
+    var done = state.tasks.filter(function(t){ return t.done; }).length;
+    var open = total - done;
+    var follow = state.tasks.filter(function(t){ return !t.done && t.remind; }).length;
+
+    $("statDone").textContent = done + " / " + total + " 已完成";
+    $("footLeft").textContent = open;
+    $("footDone").textContent = done;
+
+    var pct = total ? Math.round(done / total * 100) : 0;
+    var C = 2 * Math.PI * 20;
+    $("ringBar").style.strokeDashoffset = C - C * (pct / 100);
+    $("ringNum").textContent = pct + "%";
+
+    $("statSurplus").textContent = !total ? "还没有任务" : (open === 0 ? "全部完成，很棒" : "还剩 " + open + " 项待处理");
+
+    $("cAll").textContent = total;
+    $("cTodo").textContent = open;
+    $("cDone").textContent = done;
+    $("cFollow").textContent = follow;
+    $("nTodo").textContent = open;
+    $("nCt").textContent = state.contacts.length;
+
+    $("dsTasks").textContent = total;
+    $("dsContacts").textContent = state.contacts.length;
+    $("dsFollow").textContent = follow;
+
+    var bAt = localStorage.getItem(KEY + ".backupAt");
+    $("backupMeta").textContent = bAt
+      ? "上次备份：" + new Date(bAt).toLocaleString("zh-CN", {hour12:false}) + "（建议每周备份一次）"
+      : "本机还没有备份记录";
+
+    var d = new Date();
+    var wk = ["星期日","星期一","星期二","星期三","星期四","星期五","星期六"][d.getDay()];
+    $("subline").textContent = (d.getMonth()+1) + "月" + d.getDate() + "日 " + wk + " · 一件一件来";
+
+    Array.prototype.forEach.call(document.querySelectorAll(".tab"), function(b){
+      b.classList.toggle("on", b.dataset.tab === state.tab);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll(".nav-btn"), function(b){
+      b.classList.toggle("on", b.dataset.view === state.view);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll(".view"), function(v){
+      v.classList.toggle("on", v.id === "view-" + state.view);
+    });
+  }
+
+  /* ================= 任务列表 ================= */
+  function visibleTasks(){
+    var q = state.q.trim().toLowerCase();
+    return state.tasks.filter(function(t){
+      if(state.tab === "todo" && t.done) return false;
+      if(state.tab === "done" && !t.done) return false;
+      if(state.tab === "follow" && (t.done || !t.remind)) return false;
+      if(q){
+        var c = contactOf(t.contactId);
+        var hay = (t.text + " " + (c ? c.name : "")).toLowerCase();
+        if(hay.indexOf(q) === -1) return false;
+      }
+      return true;
+    }).sort(function(a,b){
+      if(a.done !== b.done) return a.done ? 1 : -1;
+      if(a.due && b.due && a.due !== b.due) return a.due < b.due ? -1 : 1;
+      if(a.due && !b.due) return -1;
+      if(!a.due && b.due) return 1;
+      var rank = {high:0, mid:1, low:2};
+      if(rank[a.pri] !== rank[b.pri]) return rank[a.pri] - rank[b.pri];
+      return b.created - a.created;
+    });
+  }
+
+  function renderTasks(){
+    var items = visibleTasks();
+    var $list = $("list");
+    $list.innerHTML = "";
+
+    items.forEach(function(t){
+      var li = document.createElement("li");
+      li.className = "item";
+
+      /* 勾选 */
+      var btn = document.createElement("button");
+      btn.className = "check" + (t.done ? " done" : "");
+      btn.title = t.done ? "标记为未完成" : "标记为已完成";
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5 11-11"/></svg>';
+      btn.addEventListener("click", function(){ toggleTask(t.id); });
+
+      var main = document.createElement("div");
+      main.className = "main";
+
+      var row1 = document.createElement("div");
+      row1.className = "row1";
+      var text = document.createElement("span");
+      text.className = "text" + (t.done ? " done" : "");
+      text.textContent = t.text;
+      text.title = "双击可编辑";
+      text.addEventListener("dblclick", function(){ startEdit(li, t); });
+      row1.appendChild(text);
+
+      if(t.pri !== "mid"){
+        var tag = document.createElement("span");
+        tag.className = "tag " + t.pri;
+        tag.textContent = PRI_TEXT[t.pri];
+        row1.appendChild(tag);
+      }
+      main.appendChild(row1);
+
+      var c = contactOf(t.contactId);
+      if(t.due || t.remind || c){
+        var row2 = document.createElement("div");
+        row2.className = "row2";
+
+        if(t.due){
+          var due = document.createElement("span");
+          due.className = "due " + dateClass(t.due);
+          due.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>';
+          due.appendChild(document.createTextNode("截止 " + dateLabel(t.due)));
+          row2.appendChild(due);
+        }
+
+        if(t.remind){
+          var rm = document.createElement("span");
+          rm.className = "rm " + remindClass(t.remind);
+          rm.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>';
+          rm.appendChild(document.createTextNode("跟进 " + remindLabel(t.remind)));
+          row2.appendChild(rm);
+        }
+
+        if(c){
+          var who = document.createElement("span");
+          who.className = "who";
+          who.title = "查看联系人";
+          who.innerHTML = "👤 <b></b>";
+          who.querySelector("b").textContent = c.name;
+          who.addEventListener("click", function(){ openContactCard(c.id); });
+          row2.appendChild(who);
+        }
+        main.appendChild(row2);
+      }
+
+      var del = document.createElement("button");
+      del.className = "del";
+      del.title = "删除";
+      del.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12"/></svg>';
+      del.addEventListener("click", function(){ removeTask(t.id); });
+
+      li.appendChild(btn);
+      li.appendChild(main);
+      li.appendChild(del);
+      $list.appendChild(li);
+    });
+
+    var $empty = $("empty");
+    $empty.style.display = items.length ? "none" : "block";
+    if(!items.length){
+      var t1 = $("emptyT"), d1 = $("emptyD");
+      if(state.q.trim()){
+        t1.textContent = "没找到相关任务"; d1.textContent = "换个关键词试试，或清空搜索框";
+      }else if(state.tab === "done"){
+        t1.textContent = "还没有完成的任务"; d1.textContent = "勾选左侧圆圈，完成一件就算一件";
+      }else if(state.tab === "follow"){
+        t1.textContent = "没有待跟进的任务"; d1.textContent = "添加任务时填「跟进提醒」，到点就在这里盯着对方回复";
+      }else if(state.tab === "todo"){
+        t1.textContent = "全部搞定了 🎉"; d1.textContent = "进行中的任务已经清空，好好休息一下";
+      }else{
+        t1.textContent = "清单空空的"; d1.textContent = "在上面输入框写点什么，开始今天的第一件事";
+      }
+    }
+  }
+
+  function renderSelect(){
+    var sel = $("contactSel");
+    var cur = sel.value;
+    sel.innerHTML = '<option value="">跟进谁（可不选）</option>';
+    state.contacts.forEach(function(c){
+      var o = document.createElement("option");
+      o.value = c.id;
+      o.textContent = c.name + (c.org ? " · " + c.org : "");
+      sel.appendChild(o);
+    });
+    if(cur && contactOf(cur)) sel.value = cur;
+  }
+
+  /* ================= 任务操作 ================= */
+  function addTask(){
+    var v = $("newTask").value.trim();
+    if(!v){ $("newTask").focus(); return; }
+    state.tasks.push({
+      id: uid(),
+      text: v,
+      pri: state.pri,
+      due: $("dueDate").value || "",
+      remind: $("remindAt").value || "",
+      contactId: $("contactSel").value || "",
+      done: false,
+      created: Date.now()
+    });
+    $("newTask").value = "";
+    $("dueDate").value = "";
+    $("remindAt").value = "";
+    $("contactSel").value = "";
+    save(); renderAll(); checkReminders(true);
+    $("newTask").focus();
+  }
+
+  function toggleTask(id){
+    state.tasks.forEach(function(t){ if(t.id === id) t.done = !t.done; });
+    save(); renderAll(); checkReminders(true);
+  }
+  function removeTask(id){
+    state.tasks = state.tasks.filter(function(t){ return t.id !== id; });
+    save(); renderAll();
+  }
+
+  function startEdit(li, t){
+    var text = li.querySelector(".text");
+    if(!text) return;
+    var inp = document.createElement("input");
+    inp.type = "text";
+    inp.className = "edit-input";
+    inp.value = t.text;
+    inp.maxLength = 120;
+    text.classList.add("editing");
+    text.parentNode.insertBefore(inp, text.nextSibling);
+    inp.focus();
+    inp.setSelectionRange(inp.value.length, inp.value.length);
+
+    function commit(ok){
+      if(ok){
+        var nv = inp.value.trim();
+        if(nv){ t.text = nv; save(); }
+      }
+      inp.remove();
+      text.classList.remove("editing");
+      if(ok) renderAll(); else text.classList.remove("editing");
+    }
+    inp.addEventListener("blur", function(){ commit(true); });
+    inp.addEventListener("keydown", function(e){
+      if(e.key === "Enter"){ e.preventDefault(); commit(true); }
+      else if(e.key === "Escape"){ e.preventDefault(); inp.value = t.text; commit(false); }
+    });
+  }
+
+  /* ================= 通讯录 ================= */
+  function renderContacts(){
+    var q = state.ctQ.trim().toLowerCase();
+    var list = state.contacts.filter(function(c){
+      if(!q) return true;
+      return (c.name + " " + (c.org||"") + " " + (c.role||"") + " " + (c.phone||"")).toLowerCase().indexOf(q) > -1;
+    });
+
+    var $c = $("contactList");
+    $c.innerHTML = "";
+
+    list.forEach(function(c){
+      var li = document.createElement("div");
+      li.className = "ct-item";
+
+      var av = document.createElement("div");
+      av.className = "avatar";
+      av.style.background = "linear-gradient(135deg," + colorOf(c.name) + ",#8f74ff)";
+      av.textContent = (c.name || "?").slice(0,1);
+
+      var main = document.createElement("div");
+      main.className = "ct-main";
+
+      var n = document.createElement("div");
+      n.className = "ct-name";
+      var nb = document.createElement("span");
+      nb.textContent = c.name || "未命名";
+      n.appendChild(nb);
+      if(c.role){
+        var r = document.createElement("span");
+        r.className = "ct-role";
+        r.textContent = c.role;
+        n.appendChild(r);
+      }
+      var linked = state.tasks.filter(function(t){ return t.contactId === c.id && !t.done; }).length;
+      if(linked){
+        var lb = document.createElement("span");
+        lb.className = "linkbadge";
+        lb.textContent = "待办 " + linked;
+        n.appendChild(lb);
+      }
+      main.appendChild(n);
+
+      var info = [];
+      if(c.org) info.push(c.org);
+      if(c.phone) info.push(c.phone);
+      if(c.email) info.push(c.email);
+      if(info.length){
+        var inf = document.createElement("div");
+        inf.className = "ct-info";
+        info.forEach(function(x, i){
+          if(i) inf.appendChild(document.createTextNode(" "));
+          var sp = document.createElement("span");
+          sp.textContent = x;
+          inf.appendChild(sp);
+        });
+        main.appendChild(inf);
+      }
+      if(c.note){
+        var nt = document.createElement("div");
+        nt.className = "ct-note";
+        nt.textContent = c.note;
+        main.appendChild(nt);
+      }
+
+      var act = document.createElement("div");
+      act.className = "ct-act";
+
+      var addBtn = document.createElement("button");
+      addBtn.className = "icon-btn";
+      addBtn.title = "给他加一条待办";
+      addBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+      addBtn.addEventListener("click", function(){ quickTaskFor(c.id); });
+
+      var ed = document.createElement("button");
+      ed.className = "icon-btn";
+      ed.title = "编辑";
+      ed.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10-10-4-4-10 10v4z"/><path d="M14 4l4 4"/></svg>';
+      ed.addEventListener("click", function(){ openContactForm(c); });
+
+      var dl = document.createElement("button");
+      dl.className = "icon-btn d";
+      dl.title = "删除";
+      dl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12"/></svg>';
+      dl.addEventListener("click", function(){ deleteContact(c.id); });
+
+      act.appendChild(addBtn); act.appendChild(ed); act.appendChild(dl);
+
+      li.appendChild(av); li.appendChild(main); li.appendChild(act);
+      $c.appendChild(li);
+    });
+
+    $("ctCount").textContent = state.contacts.length + " 位联系人";
+    $("ctEmpty").style.display = list.length ? "none" : "block";
+  }
+
+  function openContactForm(c){
+    state.editId = c ? c.id : null;
+    $("ctFormTitle").textContent = c ? "编辑联系人" : "新增联系人";
+    $("fName").value = c ? (c.name||"") : "";
+    $("fOrg").value = c ? (c.org||"") : "";
+    $("fRole").value = c ? (c.role||"") : "";
+    $("fPhone").value = c ? (c.phone||"") : "";
+    $("fEmail").value = c ? (c.email||"") : "";
+    $("fNote").value = c ? (c.note||"") : "";
+    $("ctForm").classList.add("on");
+    $("fName").focus();
+  }
+  function closeContactForm(){
+    $("ctForm").classList.remove("on");
+    state.editId = null;
+  }
+  function saveContact(){
+    var name = $("fName").value.trim();
+    if(!name){ $("fName").focus(); alert("姓名不能为空"); return; }
+    var data = {
+      name: name,
+      org: $("fOrg").value.trim(),
+      role: $("fRole").value.trim(),
+      phone: $("fPhone").value.trim(),
+      email: $("fEmail").value.trim(),
+      note: $("fNote").value.trim()
+    };
+    if(state.editId){
+      state.contacts.forEach(function(c){
+        if(c.id === state.editId){ c.name = data.name; c.org = data.org; c.role = data.role; c.phone = data.phone; c.email = data.email; c.note = data.note; }
+      });
+    }else{
+      data.id = uid();
+      data.created = Date.now();
+      state.contacts.push(data);
+    }
+    save(); closeContactForm(); renderAll();
+  }
+  function deleteContact(id){
+    var c = contactOf(id);
+    if(!c) return;
+    var linked = state.tasks.filter(function(t){ return t.contactId === id; }).length;
+    var msg = "删除联系人「" + c.name + "」？" + (linked ? "\n与之关联的 " + linked + " 条任务会保留，但会解除关联。" : "");
+    if(!confirm(msg)) return;
+    state.contacts = state.contacts.filter(function(x){ return x.id !== id; });
+    state.tasks.forEach(function(t){ if(t.contactId === id) t.contactId = ""; });
+    save(); renderAll();
+  }
+  function quickTaskFor(id){
+    var c = contactOf(id);
+    if(!c) return;
+    var txt = prompt("给「" + c.name + "」加一条待办：", "跟进 " + c.name + " 的回复");
+    if(!txt || !txt.trim()) return;
+    state.tasks.push({
+      id: uid(), text: txt.trim(), pri: "high",
+      due: "", remind: "", contactId: id, done: false, created: Date.now()
+    });
+    save();
+    state.view = "todo"; state.tab = "all";
+    renderAll();
+    checkReminders(true);
+  }
+  function openContactCard(id){
+    var c = contactOf(id);
+    if(!c) return;
+    state.view = "contacts";
+    state.ctQ = c.name;
+    $("ctSearch").value = c.name;
+    renderAll();
+    renderContacts();
+  }
+
+  /* ================= 提醒 ================= */
+  function pendingFollow(){
+    var now = Date.now();
+    return state.tasks.filter(function(t){
+      if(t.done || !t.remind) return false;
+      var ms = new Date(t.remind).getTime();
+      return !isNaN(ms) && ms <= now;
+    });
+  }
+
+  function checkReminders(force){
+    var hot = pendingFollow();
+    var $b = $("banner");
+    if(!hot.length){ $b.classList.remove("on"); return; }
+
+    $b.classList.add("on");
+    $("bTitle").textContent = "该盯一下了（" + hot.length + " 项）";
+    var $l = $("bList");
+    $l.innerHTML = "";
+    hot.slice(0,3).forEach(function(t){
+      var c = contactOf(t.contactId);
+      var sp = document.createElement("span");
+      sp.textContent = "· " + (c ? c.name + "： " : "") + t.text;
+      $l.appendChild(sp);
+    });
+
+    /* 只对没提醒过的弹系统通知 */
+    hot.forEach(function(t){
+      if(state.doneIds.indexOf(t.id) > -1) return;
+      state.doneIds.push(t.id);
+      save();
+      if(("Notification" in window) && Notification.permission === "granted"){
+        try{
+          var c = contactOf(t.contactId);
+          new Notification("该盯一下了：" + (c ? c.name : "跟进"), {
+            body: t.text + "（提醒时间 " + remindLabel(t.remind) + "）",
+            tag: "todo-" + t.id
+          });
+        }catch(e){}
+      }
+    });
+  }
+
+  function askNotify(){
+    if(!("Notification" in window)){
+      $("notifyState").textContent = "此浏览器不支持";
+      alert("当前浏览器不支持桌面通知，建议用 Chrome / Edge 打开。");
+      return;
+    }
+    if(Notification.permission === "granted"){
+      $("notifyState").textContent = "已开启";
+      testNotify();
+      return;
+    }
+    Notification.requestPermission().then(function(p){
+      if(p === "granted"){
+        $("notifyState").textContent = "已开启";
+        testNotify();
+      }else{
+        $("notifyState").textContent = "被拒绝（可在浏览器设置里重新允许）";
+      }
+    });
+  }
+  function testNotify(){
+    var title = "提醒测试";
+    var body = "桌面提醒已开通，到点会这样通知你。";
+    if(("Notification" in window) && Notification.permission === "granted"){
+      try{ new Notification(title, {body:body}); }catch(e){ alert(body); }
+    }else{
+      alert(body);
+    }
+  }
+
+  /* ================= 备份 / 导入 ================= */
+  function stamp(){
+    var d = new Date();
+    return d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + "-" + pad(d.getHours()) + pad(d.getMinutes());
+  }
+
+  function download(name, content, mime){
+    var blob = new Blob([content], {type: mime || "application/octet-stream"});
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function(){
+      URL.revokeObjectURL(a.href);
+      a.remove();
+    }, 1200);
+  }
+
+  function backupPayload(){
+    return {
+      app: "doubao-todolist",
+      version: 2,
+      exportedAt: new Date().toISOString(),
+      tasks: state.tasks,
+      contacts: state.contacts
+    };
+  }
+  function markBackup(){
+    localStorage.setItem(KEY + ".backupAt", new Date().toISOString());
+    save(); renderStats();
+  }
+  function backup(){
+    download("待办备份-" + stamp() + ".json", JSON.stringify(backupPayload(), null, 2), "application/json");
+    markBackup();
+  }
+
+  function importData(d){
+    if(!d || !Array.isArray(d.tasks)){ alert("内容里没有找到任务数据，请确认粘贴的是本工具复制的备份文本。"); return false; }
+    var tasks = d.tasks || [];
+    var contacts = d.contacts || [];
+    var mode = confirm(
+      "找到 " + tasks.length + " 条任务、" + contacts.length + " 位联系人。\n\n" +
+      "点「确定」= 覆盖当前数据；点「取消」= 合并到现有数据（保留两边的）。"
+    );
+    if(mode){
+      state.tasks = tasks;
+      state.contacts = contacts;
+      state.doneIds = [];
+    }else{
+      var ids = {};
+      state.tasks.forEach(function(t){ ids[t.id] = 1; });
+      var cids = {};
+      state.contacts.forEach(function(c){ cids[c.id] = 1; });
+      contacts.forEach(function(c){ if(!cids[c.id]) state.contacts.push(c); });
+      tasks.forEach(function(t){ if(!ids[t.id]) state.tasks.push(t); });
+    }
+    save(); renderAll(); checkReminders(true);
+    alert("导入完成");
+    return true;
+  }
+
+  function importFile(file){
+    var fr = new FileReader();
+    fr.onload = function(){
+      var d;
+      try{ d = JSON.parse(fr.result); }catch(e){ alert("文件格式不对，请选择本工具导出的 JSON 备份。"); return; }
+      importData(d);
+    };
+    fr.readAsText(file, "utf-8");
+  }
+
+  /* ---------- 文本备份：复制 / 粘贴 ---------- */
+  var tpMode = "copy";
+
+  function openTextPanel(mode){
+    tpMode = mode;
+    var panel = $("textPanel");
+    var area = $("tpArea");
+    panel.classList.add("on");
+
+    if(mode === "copy"){
+      $("tpTitle").textContent = "备份文本（可粘贴到备忘录 / 微信）";
+      area.readOnly = true;
+      area.classList.add("readonly");
+      area.value = JSON.stringify(backupPayload(), null, 2);
+      area.focus(); area.select();
+      $("tpAction").textContent = "复制";
+      $("tpHint").textContent = "已尝试复制到剪贴板；没成功就手动全选复制。";
+      copyText(area.value, function(ok){
+        $("tpHint").textContent = ok
+          ? "已复制到剪贴板，粘贴到备忘录或聊天里存好。"
+          : "自动复制被系统拦住了，请手动全选（点一下再 Ctrl/⌘+A）后复制。";
+        markBackup();
+      });
+    }else{
+      $("tpTitle").textContent = "粘贴备份文本";
+      area.readOnly = false;
+      area.classList.remove("readonly");
+      area.value = "";
+      $("tpAction").textContent = "导入";
+      $("tpHint").textContent = "把之前复制的备份文本整段粘进来，再点「导入」。";
+      area.focus();
+    }
+  }
+
+  function copyText(text, cb){
+    var done = false;
+    function finish(ok){ if(!done){ done = true; cb && cb(ok); } }
+    try{
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(function(){ finish(true); }, function(){ fallback(); });
+        return;
+      }
+    }catch(e){}
+    fallback();
+
+    function fallback(){
+      var ok = false;
+      try{
+        var area = $("tpArea");
+        area.removeAttribute("readonly");
+        area.select();
+        area.setSelectionRange(0, area.value.length);
+        ok = document.execCommand("copy");
+        area.setAttribute("readonly", "readonly");
+      }catch(e){ ok = false; }
+      finish(ok);
+    }
+  }
+
+  /* ================= CSV ================= */
+  function csvCell(v){
+    v = (v === null || v === undefined) ? "" : String(v);
+    if(/[",\n\r]/.test(v)) return '"' + v.replace(/"/g, '""') + '"';
+    return v;
+  }
+  function toCsv(rows){
+    return "\ufeff" + rows.map(function(r){ return r.map(csvCell).join(","); }).join("\r\n");
+  }
+
+  function exportTaskCsv(){
+    var rows = [["状态","任务内容","优先级","截止日期","跟进提醒","关联联系人","创建时间"]];
+    state.tasks.forEach(function(t){
+      var c = contactOf(t.contactId);
+      rows.push([
+        t.done ? "已完成" : "未完成",
+        t.text,
+        PRI_TEXT[t.pri] || "普通",
+        t.due || "",
+        t.remind ? t.remind.replace("T", " ") : "",
+        c ? (c.name + (c.org ? " / " + c.org : "")) : "",
+        t.created ? new Date(t.created).toLocaleString("zh-CN", {hour12:false}) : ""
+      ]);
+    });
+    download("待办清单-" + stamp() + ".csv", toCsv(rows), "text/csv;charset=utf-8");
+  }
+
+  function exportContactCsv(){
+    var rows = [["姓名","单位/机构","角色","电话","邮箱","备注","关联待办数"]];
+    state.contacts.forEach(function(c){
+      var n = state.tasks.filter(function(t){ return t.contactId === c.id && !t.done; }).length;
+      rows.push([c.name, c.org || "", c.role || "", c.phone || "", c.email || "", c.note || "", n]);
+    });
+    download("通讯录-" + stamp() + ".csv", toCsv(rows), "text/csv;charset=utf-8");
+  }
+
+  /* ================= ICS ================= */
+  function icsDate(ms){
+    var d = new Date(ms);
+    return d.getUTCFullYear() + pad(d.getUTCMonth()+1) + pad(d.getUTCDate()) + "T" +
+           pad(d.getUTCHours()) + pad(d.getUTCMinutes()) + pad(d.getUTCSeconds()) + "Z";
+  }
+  function icsDay(dateStr){
+    return dateStr.replace(/-/g, "");
+  }
+  function icsEscape(s){
+    return String(s || "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
+  }
+  function exportIcs(){
+    var lines = [
+      "BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//DoubaoTodo//CN","CALSCALE:GREGORIAN","METHOD:PUBLISH"
+    ];
+    var up = icsDate(Date.now());
+
+    state.tasks.forEach(function(t, i){
+      if(t.done) return;
+      var c = contactOf(t.contactId);
+
+      // 跟进提醒：到点事件 + 提前 10 分钟闹钟
+      if(t.remind){
+        var ms = new Date(t.remind).getTime();
+        if(!isNaN(ms)){
+          lines.push("BEGIN:VEVENT");
+          lines.push("UID:todo-remind-" + t.id + "@doubao-todo");
+          lines.push("DTSTAMP:" + up);
+          lines.push("DTSTART:" + icsDate(ms));
+          lines.push("DTEND:" + icsDate(ms + 30 * 60000));
+          lines.push("SUMMARY:" + icsEscape("【跟进】" + (c ? c.name + "：" : "") + t.text));
+          lines.push("DESCRIPTION:" + icsEscape((c ? ("联系人：" + c.name + (c.phone ? " / " + c.phone : "") + "\\n") : "") + t.text));
+          lines.push("BEGIN:VALARM","TRIGGER:-PT10M","ACTION:DISPLAY","DESCRIPTION:" + icsEscape("该盯一下了：" + t.text),"END:VALARM");
+          lines.push("END:VEVENT");
+        }
+      }
+
+      // 截止日期：全天事件
+      if(t.due){
+        var d0 = new Date(t.due.slice(0,10) + "T00:00:00");
+        if(!isNaN(d0.getTime())){
+          var next = new Date(d0.getTime() + 86400000);
+          lines.push("BEGIN:VEVENT");
+          lines.push("UID:todo-due-" + t.id + "@doubao-todo");
+          lines.push("DTSTAMP:" + up);
+          lines.push("DTSTART;VALUE=DATE:" + icsDay(t.due));
+          lines.push("DTEND;VALUE=DATE:" + next.getFullYear() + pad(next.getMonth()+1) + pad(next.getDate()));
+          lines.push("SUMMARY:" + icsEscape("【截止】" + (c ? c.name + "：" : "") + t.text));
+          lines.push("BEGIN:VALARM","TRIGGER:-PT9H","ACTION:DISPLAY","DESCRIPTION:" + icsEscape("今天到期：" + t.text),"END:VALARM");
+          lines.push("END:VEVENT");
+        }
+      }
+    });
+
+    lines.push("END:VCALENDAR");
+    if(lines.length <= 6){
+      alert("当前没有带日期或跟进提醒的未完成任务，导出的日历会是空的。");
+    }
+    download("待办提醒-" + stamp() + ".ics", lines.join("\r\n"), "text/calendar;charset=utf-8");
+  }
+
+  /* ================= 事件绑定 ================= */
+  $("addBtn").addEventListener("click", addTask);
+  $("newTask").addEventListener("keydown", function(e){
+    if(e.key === "Enter"){ e.preventDefault(); addTask(); }
+  });
+
+  $("priGroup").addEventListener("click", function(e){
+    var b = e.target.closest(".pri-btn");
+    if(!b) return;
+    state.pri = b.dataset.pri;
+    Array.prototype.forEach.call(this.querySelectorAll(".pri-btn"), function(x){
+      x.classList.toggle("on", x === b);
+    });
+  });
+
+  $("tabs").addEventListener("click", function(e){
+    var b = e.target.closest(".tab");
+    if(!b) return;
+    state.tab = b.dataset.tab;
+    renderTasks(); renderStats();
+  });
+
+  $("search").addEventListener("input", function(){
+    state.q = this.value;
+    renderTasks();
+  });
+
+  $("clearDone").addEventListener("click", function(){
+    var n = state.tasks.filter(function(t){ return t.done; }).length;
+    if(!n) return;
+    if(confirm("清除 " + n + " 项已完成的任务？删除后不可恢复，建议先导出备份。")){
+      state.tasks = state.tasks.filter(function(t){ return !t.done; });
+      save(); renderAll();
+    }
+  });
+
+  $("nav").addEventListener("click", function(e){
+    var b = e.target.closest(".nav-btn");
+    if(!b) return;
+    state.view = b.dataset.view;
+    renderStats();
+    if(state.view === "contacts") renderContacts();
+  });
+
+  /* 通讯录 */
+  $("addContactBtn").addEventListener("click", function(){ openContactForm(null); });
+  $("ctCancel").addEventListener("click", closeContactForm);
+  $("ctSave").addEventListener("click", saveContact);
+  $("ctSearch").addEventListener("input", function(){
+    state.ctQ = this.value;
+    renderContacts();
+  });
+  $("fName").addEventListener("keydown", function(e){
+    if(e.key === "Enter"){ e.preventDefault(); saveContact(); }
+  });
+
+  /* 数据页 */
+  $("btnBackup").addEventListener("click", backup);
+  $("btnCopy").addEventListener("click", function(){ openTextPanel("copy"); });
+  $("btnPaste").addEventListener("click", function(){ openTextPanel("paste"); });
+  $("tpClose").addEventListener("click", function(){ $("textPanel").classList.remove("on"); });
+  $("tpAction").addEventListener("click", function(){
+    var area = $("tpArea");
+    if(tpMode === "copy"){
+      area.focus(); area.select(); area.setSelectionRange(0, area.value.length);
+      copyText(area.value, function(ok){
+        $("tpHint").textContent = ok ? "已复制到剪贴板。" : "自动复制失败，请手动全选复制。";
+        if(ok) markBackup();
+      });
+    }else{
+      var txt = area.value.trim();
+      if(!txt){ $("tpHint").textContent = "先粘贴备份文本，再点导入。"; return; }
+      var d;
+      try{ d = JSON.parse(txt); }catch(e){ $("tpHint").textContent = "这段文本不是有效的备份内容，可能没复制完整。"; return; }
+      if(importData(d)){ $("textPanel").classList.remove("on"); }
+    }
+  });
+  $("btnImport").addEventListener("click", function(){ $("fileImport").click(); });
+  $("fileImport").addEventListener("change", function(){
+    if(this.files && this.files[0]) importFile(this.files[0]);
+    this.value = "";
+  });
+  $("btnCsvTask").addEventListener("click", exportTaskCsv);
+  $("btnCsvCt").addEventListener("click", exportContactCsv);
+  $("btnIcs").addEventListener("click", exportIcs);
+  $("btnNotify").addEventListener("click", askNotify);
+  $("btnTest").addEventListener("click", testNotify);
+  $("btnClearAll").addEventListener("click", function(){
+    if(!confirm("将删除全部任务和联系人，确定吗？建议先导出备份。")) return;
+    if(!confirm("再确认一次：数据删除后无法恢复。")) return;
+    state.tasks = []; state.contacts = []; state.doneIds = [];
+    save(); renderAll();
+  });
+
+  $("btnLock").addEventListener("click", function(){
+    try{ sessionStorage.removeItem(UKEY); }catch(e){}
+    showLock();
+  });
+  $("pwdBtn").addEventListener("click", tryUnlock);
+  $("pwdInput").addEventListener("keydown", function(e){
+    if(e.key === "Enter"){ e.preventDefault(); tryUnlock(); }
+  });
+
+  $("bClose").addEventListener("click", function(){
+    $("banner").classList.remove("on");
+  });
+
+  /* ================= 访问密码 ================= */
+  var PWD = "GZ88888888";
+  var UKEY = "doubao.todo.unlock";
+  var lockFails = 0, lockUntil = 0, lockTimer = null;
+
+  function isUnlocked(){
+    try{ return sessionStorage.getItem(UKEY) === "1"; }catch(e){ return false; }
+  }
+  function showLock(){
+    $("lock").classList.add("on");
+    $("pwdInput").value = "";
+    $("pwdMsg").textContent = "";
+    setTimeout(function(){ try{ $("pwdInput").focus(); }catch(e){} }, 80);
+  }
+  function startCooldown(){
+    var btn = $("pwdBtn");
+    clearInterval(lockTimer);
+    btn.disabled = true;
+    var tick = function(){
+      var left = Math.ceil((lockUntil - Date.now()) / 1000);
+      if(left > 0){
+        $("pwdMsg").textContent = "尝试次数过多，" + left + " 秒后再试";
+      }else{
+        clearInterval(lockTimer);
+        btn.disabled = false;
+        $("pwdMsg").textContent = "";
+      }
+    };
+    tick();
+    lockTimer = setInterval(tick, 1000);
+  }
+  function tryUnlock(){
+    if(Date.now() < lockUntil) return;
+    if($("pwdInput").value === PWD){
+      try{ sessionStorage.setItem(UKEY, "1"); }catch(e){}
+      $("lock").classList.remove("on");
+      lockFails = 0;
+      $("pwdMsg").textContent = "";
+      $("pwdInput").value = "";
+    }else{
+      lockFails++;
+      var card = $("lock").querySelector(".lock-card");
+      card.style.animation = "none";
+      void card.offsetWidth;
+      card.style.animation = "shake .36s";
+      if(lockFails >= 5){
+        lockFails = 0;
+        lockUntil = Date.now() + 30000;
+        startCooldown();
+      }else{
+        $("pwdMsg").textContent = "密码不对，还可尝试 " + (5 - lockFails) + " 次";
+      }
+      $("pwdInput").select();
+    }
+  }
+
+  /* ================= 启动 ================= */
+  var had = load();
+  if(!had){
+    // 尝试迁移旧版数据
+    try{
+      var old = localStorage.getItem(OLD_KEY);
+      if(old){
+        var od = JSON.parse(old);
+        if(od && Array.isArray(od.tasks)){
+          state.tasks = od.tasks.map(function(t){
+            return { id: t.id || uid(), text: t.text, pri: t.pri || "mid", due: t.due || "",
+                     remind: "", contactId: "", done: !!t.done, created: t.created || Date.now() };
+          });
+        }
+      }
+    }catch(e){}
+  }
+  if(!had && !state.tasks.length && !state.contacts.length){
+    var td = todayStr();
+    state.contacts = [
+      { id: uid(), name: "王建国", org: "某银行广州分行", role: "客户经理", phone: "138-0000-1234", email: "wang@bank.com",
+        note: "负责授信审批，习惯邮件沟通，回得慢，要盯。", created: Date.now() },
+      { id: uid(), name: "李敏", org: "某某工程集团", role: "商务经理", phone: "139-0000-5678", email: "",
+        note: "对接竣工资料与结算，月底前要回复。", created: Date.now() }
+    ];
+    state.tasks = [
+      { id: uid(), text: "双击这条文字，可以直接修改内容", pri: "low", due: "", remind: "", contactId: "", done: false, created: Date.now()-3 },
+      { id: uid(), text: "试试点一下左边的圆圈，标记完成", pri: "mid", due: "", remind: "", contactId: "", done: true, created: Date.now()-2 },
+      { id: uid(), text: "催一下授信批复进度", pri: "high", due: td, remind: td + "T10:00", contactId: state.contacts[0].id, done: false, created: Date.now()-1 },
+      { id: uid(), text: "盯对方回复竣工资料的补充要求", pri: "high", due: "", remind: "",
+        contactId: state.contacts[1].id, done: false, created: Date.now() }
+    ];
+    save();
+  }
+
+  renderAll();
+  if(!isUnlocked()) showLock();
+  if(("Notification" in window) && Notification.permission === "granted"){
+    $("notifyState").textContent = "已开启";
+  }
+  checkReminders(true);
+  // 每 30 秒复查一次提醒
+  setInterval(function(){ checkReminders(true); }, 30000);
+})();
+</script>
+</body>
+</html>
